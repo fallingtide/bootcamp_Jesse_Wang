@@ -1,0 +1,22 @@
+# Secrets — never commit real credentials
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Generated data — raw data is committed, processed outputs are regenerated
+data/processed/
+
+# OS
+.DS_Store
+
+# Course material (not part of the project deliverable)
+stage03_python-fundamentals_homework-sheet.pdf
