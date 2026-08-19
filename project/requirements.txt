@@ -1,0 +1,18 @@
+# Core data stack
+numpy
+pandas
+
+# Data acquisition (Stage 04)
+requests
+yfinance
+beautifulsoup4
+
+# Configuration / secrets (Stage 02, 04, 05)
+python-dotenv
+
+# Storage: Parquet engine (Stage 05)
+pyarrow
+
+# Notebooks
+ipykernel
+jupyter
