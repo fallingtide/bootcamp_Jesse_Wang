@@ -1,0 +1,19 @@
+# Environment / config — keep local, never commit
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Course material (not part of the project deliverable)
+stage07_outliers-risk-assumptions_homework-sheet.pdf
