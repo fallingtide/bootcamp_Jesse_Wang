@@ -48,6 +48,7 @@ stakeholder memo (`docs/stakeholder_memo.md`).
 | Acquire & validate data | Data Acquisition & Ingestion (Stage 04) | `notebooks/project_pipeline.ipynb` (acquisition), raw data in `data/raw/` |
 | Store & version data | Data Storage (Stage 05) | `src/io.py`, processed Parquet/CSV in `data/processed/` |
 | Clean & prepare data | Data Preprocessing (Stage 06) | `src/cleaning.py`, cleaned dataset in `data/processed/` |
+| Detect & flag outliers, assess impact | Outlier Analysis (Stage 07) | `src/outliers.py`, `docs/outliers.md`, `notebooks/sensitivity_outliers.ipynb` |
 | Model & evaluate | Modeling (later stage) | forecast notebook + risk bands |
 | Deliver decision support | Reporting (later stage) | memo + scenario readout |
 
@@ -64,14 +65,17 @@ project/
 │   └── processed/             # cleaned / derived data (Parquet + CSV)
 ├── notebooks/
 │   ├── project_pipeline.ipynb # the master pipeline, extended every stage
+│   ├── sensitivity_outliers.ipynb  # Stage 07 sensitivity comparison (read-only)
 │   └── python_fundamentals_summary.ipynb
 ├── src/
 │   ├── config.py              # .env loading + secret lookup
 │   ├── utils.py               # summary stats + return computation
 │   ├── io.py                  # suffix-routing read/write + validation
-│   └── cleaning.py            # fill / drop / normalize
+│   ├── cleaning.py            # fill / drop / normalize
+│   └── outliers.py            # detect / flag / winsorize outliers (per ticker)
 ├── docs/
-│   └── stakeholder_memo.md    # the one-page brief for the PM
+│   ├── stakeholder_memo.md    # the one-page brief for the PM
+│   └── outliers.md            # Stage 07 assumptions, findings & risks
 ├── reports/                   # (empty until the reporting stage)
 └── model/                     # (empty until the modeling stage)
 ```
@@ -173,6 +177,26 @@ prepares the raw price panel for modeling:
 - **Future data follows the same schema** (same columns/dtypes); a materially
   different vendor schema needs re-inspection.
 
+## Outlier Analysis (Stage 07)
+
+The outlier step (`notebooks/project_pipeline.ipynb` → `src/outliers.py`) detects
+extreme daily returns **within each ticker** (GLD/QQQ are far more volatile than
+TLT, so outliers are defined per ticker, not against the pooled panel), then
+**flags — never auto-deletes** — them.
+
+- **Method:** Z-score (`threshold=3`, population std) is the default; IQR (`k=1.5`)
+  is available but over-flags fat-tailed returns. On the latest pull the Z-score
+  flags 11 of ~1,250 days (~0.9%), IQR flags ~3.3%.
+- **Findings:** the largest event is GLD's −10.3% day (2026-01-30) — a genuine
+  gold move, not an error. Dropping the flagged days shrinks pooled daily-return
+  std ~7%; per-ticker it is concentrated in GLD (−10% → −1.6%, ~12% drop). Betas
+  vs SPY are largely robust.
+- **Treatment choice is deferred, not imposed:** the pipeline saves a flagged +
+  winsorized copy (`data/processed/etf_returns_flagged_*.csv`) so the modeling
+  stage can *choose* keep / drop / winsorize rather than inherit a decision.
+- Full write-up (assumptions + risks): [`docs/outliers.md`](docs/outliers.md).
+  Sensitivity comparison: [`notebooks/sensitivity_outliers.ipynb`](notebooks/sensitivity_outliers.ipynb).
+
 ## Risks & known unknowns
 
 - **Regime change** breaking historical relationships — monitored via rolling
@@ -181,6 +205,9 @@ prepares the raw price panel for modeling:
   validation.
 - **Capacity:** returns may erode as AUM scales past the strategy's limit.
 - **Data quality / survivorship bias** in the index history.
+- **Understated tail risk** if outliers are dropped before modeling — the −10%
+  gold day is a real event, so the pipeline flags rather than deletes it
+  (`docs/outliers.md`).
 
 ## Cadence
 
